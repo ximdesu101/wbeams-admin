@@ -43,7 +43,7 @@ function RecentSentAlerts() {
                 <CardTitle className="flex gap-1 my-auto">
                     <Send className="w-4 h-4 my-auto" /> Recent Sent Alerts
                 </CardTitle>
-                <Button variant="outline" onClick={() => navigate("/test-route")}>All Sent Alerts</Button>
+                <Button variant="outline" onClick={() => navigate("/sent-alerts")}>All Sent Alerts</Button>
             </CardHeader>
             <Separator />
             <CardContent className="space-y-3">

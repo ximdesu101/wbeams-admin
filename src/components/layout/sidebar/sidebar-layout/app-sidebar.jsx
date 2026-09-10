@@ -52,7 +52,8 @@ const navMain = [
         ],
     },
     { title: "Operator Management", url: "/operator", icon: UserRoundCog },
-    { title: "Reports and Analytics", url: "coming-soon", icon: ChartNoAxesCombined },
+    { 
+        title: "Reports and Analytics", url: "/report-analytics", icon: ChartNoAxesCombined },
     { title: "User Logs", url: "user-logs", icon: Logs },
     { title: "System Settings", url: "/settings", icon: Settings2 },
 ];

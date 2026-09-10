@@ -19,7 +19,7 @@ const Masterlist = lazy(() => import("@/pages/users/masterlist/Masterlist"));
 const MasterlistForm = lazy(() => import("@/pages/users/masterlist/layouts/MasterlistForm"));
 const Operator = lazy(() => import("@/pages/operator/Operator"));
 const OperatorDetails = lazy(() => import("@/pages/operator/layouts/OperatorDetails"));
-const ComingSoon = lazy(() => import("@/pages/analytics/ComingSoon"));
+const Analytics = lazy(() => import("@/pages/analytics/Analytics"));
 const UserLogs = lazy(() => import("@/pages/audits/UserLogs"));
 const Settings = lazy(() => import("@/pages/settings/Settings"));
 const AccessRequestTable = lazy(() => import("@/pages/notification/AccessRequestTable"));
@@ -72,7 +72,16 @@ export const router = createBrowserRouter([
                             { path: ":id", element: withSuspense(OperatorDetails), handle: { crumb: (params) => `Operator ${params.id}` } },
                         ],
                     },
-                    { path: "coming-soon", element: withSuspense(ComingSoon), handle: { crumb: () => "Coming Soon" }  },
+                    {
+                        path: "report-analytics",
+                        handle: { crumb: () => "Report and Analytics" },
+                        children: [
+                            { index: true, element: withSuspense(Analytics) },
+                            { path: "alerts", element: withSuspense(Analytics), handle: { crumb: () => "Alert Reports" } },
+                            { path: "operators", element: withSuspense(Analytics), handle: { crumb: () => "Operator Reports" } },
+                            { path: "users", element: withSuspense(Analytics), handle: { crumb: () => "User Reports" } },
+                        ],
+                    },
                     { path: "user-logs", element: withSuspense(UserLogs), handle: { crumb: () => "User Logs" } },
                     { path: "settings", element: withSuspense(Settings), handle: { crumb: () => "System Settings" } },
                     { path: "logout", element: <Logout /> },
