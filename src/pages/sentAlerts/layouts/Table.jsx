@@ -177,11 +177,12 @@ const SentAlertTable = () => {
                         <TableRow>
                             <TableHead>ID</TableHead>
                             <TableHead>Emergency Type</TableHead>
+                            <TableHead>Alert Type</TableHead>
                             <TableHead>Description</TableHead>
-                            <TableHead>Location</TableHead>
                             <TableHead>Severity</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Sent By</TableHead>
+                            <TableHead>Time</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead className="text-right">
                                 Actions
@@ -192,7 +193,7 @@ const SentAlertTable = () => {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={9}>
+                                <TableCell colSpan={10}>
                                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                                         <Loader className="animate-spin" />
                                         <p>Loading sent alerts...</p>
@@ -201,7 +202,7 @@ const SentAlertTable = () => {
                             </TableRow>
                         ) : isError ? (
                             <TableRow>
-                                <TableCell colSpan={9}>
+                                <TableCell colSpan={10}>
                                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                                         <CircleSlash />
                                         <p>Failed to load alerts.</p>
@@ -220,13 +221,13 @@ const SentAlertTable = () => {
                                     </TableCell>
 
                                     <TableCell>
-                                        <div className="max-w-[280px] truncate">
-                                            {alert.Description}
-                                        </div>
+                                        {alert.alert_type}
                                     </TableCell>
 
                                     <TableCell>
-                                        {alert.location}
+                                        <div className="max-w-[280px] truncate">
+                                            {alert.Description}
+                                        </div>
                                     </TableCell>
 
                                     <TableCell>
@@ -242,6 +243,10 @@ const SentAlertTable = () => {
                                     </TableCell>
 
                                     <TableCell>
+                                        {alert.time}
+                                    </TableCell>
+
+                                    <TableCell>
                                         {alert.date}
                                     </TableCell>
 
@@ -252,7 +257,7 @@ const SentAlertTable = () => {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={9}>
+                                <TableCell colSpan={10}>
                                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                                         <CircleSlash />
                                         <p>{getEmptyMessage()}</p>
