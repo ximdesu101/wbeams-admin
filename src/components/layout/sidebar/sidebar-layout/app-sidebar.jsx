@@ -15,6 +15,7 @@ import {
     LogOut,
     Loader2,
     BellElectric,
+    MessagesSquare
 } from "lucide-react";
 
 import { NavMain } from "@/components/layout/sidebar/sidebar-layout/nav-main";
@@ -52,8 +53,8 @@ const navMain = [
         ],
     },
     { title: "Operator Management", url: "/operator", icon: UserRoundCog },
-    { 
-        title: "Reports and Analytics", url: "/report-analytics", icon: ChartNoAxesCombined },
+    { title: "Reports and Analytics", url: "/report-analytics", icon: ChartNoAxesCombined },
+    { title: "Feedback and Ratings", url: "/feedback", icon: MessagesSquare },
     { title: "User Logs", url: "user-logs", icon: Logs },
     { title: "System Settings", url: "/settings", icon: Settings2 },
 ];

@@ -20,6 +20,7 @@ const MasterlistForm = lazy(() => import("@/pages/users/masterlist/layouts/Maste
 const Operator = lazy(() => import("@/pages/operator/Operator"));
 const OperatorDetails = lazy(() => import("@/pages/operator/layouts/OperatorDetails"));
 const Analytics = lazy(() => import("@/pages/analytics/Analytics"));
+const Feedback = lazy(() => import("@/pages/feedback/Feedback"));
 const UserLogs = lazy(() => import("@/pages/audits/UserLogs"));
 const Settings = lazy(() => import("@/pages/settings/Settings"));
 const AccessRequestTable = lazy(() => import("@/pages/notification/AccessRequestTable"));
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
                             { path: "users", element: withSuspense(Analytics), handle: { crumb: () => "User Reports" } },
                         ],
                     },
+                    { path: "feedback", element: withSuspense(Feedback), handle: { crumb: () => "Feedback" } },
                     { path: "user-logs", element: withSuspense(UserLogs), handle: { crumb: () => "User Logs" } },
                     { path: "settings", element: withSuspense(Settings), handle: { crumb: () => "System Settings" } },
                     { path: "logout", element: <Logout /> },
