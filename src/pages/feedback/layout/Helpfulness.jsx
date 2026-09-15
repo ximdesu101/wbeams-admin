@@ -1,3 +1,6 @@
+"use client"
+
+import { useQuery } from "@tanstack/react-query";
 import {
     Card,
     CardContent,
@@ -5,15 +8,37 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { ThumbsUp, ThumbsDown } from "lucide-react"
+import {
+    ThumbsUp,
+    ThumbsDown,
+} from "lucide-react";
+import { getFeedbackStats } from "@/services/feedbackService";
 
 const Helpfulness = () => {
-    const totalFeedback = 684
+    const { data, isLoading } = useQuery({
+        queryKey: ["feedback-stats"],
+        queryFn: getFeedbackStats,
+        staleTime: 30_000,
+    });
+
+    const stats = data?.data ?? {};
+    const totalFeedback = stats.alertFeedbackCount ?? 0;
+    const helpful = stats.helpfulAlerts ?? 0;
+    const notHelpful = stats.notHelpfulAlerts ?? 0;
+
+    const helpfulPercent =
+        totalFeedback > 0
+            ? Math.round((helpful / totalFeedback) * 100)
+            : stats.helpfulPercent ?? 0;
+    const notHelpfulPercent =
+        totalFeedback > 0
+            ? Math.round((notHelpful / totalFeedback) * 100)
+            : stats.notHelpfulPercent ?? 0;
 
     const feedback = [
         {
             label: "Helpful",
-            value: 87,
+            value: helpfulPercent,
             icon: ThumbsUp,
             color: "text-emerald-700",
             bgColor: "bg-emerald-100",
@@ -21,16 +46,16 @@ const Helpfulness = () => {
         },
         {
             label: "Not Helpful",
-            value: 13,
+            value: notHelpfulPercent,
             icon: ThumbsDown,
-            color: "text-red-500",
-            bgColor: "bg-red-100",
-            rowColor: "bg-red-50",
+            color: "text-rose-500",
+            bgColor: "bg-rose-100",
+            rowColor: "bg-rose-50",
         },
-    ]
+    ];
 
     return (
-        <Card>
+        <Card className="h-full">
             <CardHeader>
                 <CardTitle>Alert Helpfulness</CardTitle>
                 <CardDescription>
@@ -41,7 +66,7 @@ const Helpfulness = () => {
             <CardContent className="space-y-4">
                 <div className="text-center">
                     <h1 className="text-4xl font-bold tracking-tight">
-                        {totalFeedback}
+                        {isLoading ? "—" : totalFeedback}
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         Total Alert Responses
@@ -50,12 +75,12 @@ const Helpfulness = () => {
 
                 <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
                     <div
-                        className="bg-emerald-700"
-                        style={{ width: "87%" }}
+                        className="bg-emerald-700 transition-all"
+                        style={{ width: `${helpfulPercent}%` }}
                     />
                     <div
-                        className="bg-rose-400"
-                        style={{ width: "13%" }}
+                        className="bg-rose-400 transition-all"
+                        style={{ width: `${notHelpfulPercent}%` }}
                     />
                 </div>
 
@@ -85,7 +110,7 @@ const Helpfulness = () => {
                                 <span
                                     className={`text-lg font-bold ${item.color}`}
                                 >
-                                    {item.value}%
+                                    {isLoading ? "—" : `${item.value}%`}
                                 </span>
                             </div>
                         )

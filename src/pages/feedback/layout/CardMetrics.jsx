@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import {
     Card,
     CardHeader,
@@ -10,13 +11,29 @@ import {
     UserRoundCheck,
     MonitorCheck
 } from "lucide-react";
+import { getFeedbackStats } from "@/services/feedbackService";
 
 const CardMetrics = () => {
+    const { data, isLoading } = useQuery({
+        queryKey: ["feedback-stats"],
+        queryFn: getFeedbackStats,
+        staleTime: 30_000,
+    });
+
+    const stats = data?.data ?? {};
+
+    const helpfulPercent =
+        stats.alertFeedbackCount > 0
+            ? Math.round(
+                  ((stats.helpfulAlerts ?? 0) / stats.alertFeedbackCount) * 100
+              )
+            : stats.helpfulPercent ?? 0;
+
     const cardMetrics = [
         {
             id: 1,
             title: "Total Feedback",
-            value: 128,
+            value: isLoading ? "—" : (stats.totalFeedback ?? 0),
             description: "Across all categories",
             icon: MessageSquareMore,
             bgColor: "bg-blue-100",
@@ -25,8 +42,8 @@ const CardMetrics = () => {
         {
             id: 2,
             title: "Alert Feedback",
-            value: 52,
-            description: "85% helpful",
+            value: isLoading ? "—" : (stats.alertFeedbackCount ?? 0),
+            description: `${helpfulPercent}% helpful`,
             icon: Bell,
             bgColor: "bg-green-100",
             iconColor: "text-green-600",
@@ -34,8 +51,10 @@ const CardMetrics = () => {
         {
             id: 3,
             title: "Operator Feedback",
-            value: "4.9/5",
-            description: "41 recipient feedback",
+            value: isLoading
+                ? "—"
+                : `${stats.averageOperatorRating ?? 0}/5`,
+            description: `${stats.operatorFeedbackCount ?? 0} recipient feedback`,
             icon: UserRoundCheck,
             bgColor: "bg-yellow-100",
             iconColor: "text-yellow-600",
@@ -43,8 +62,10 @@ const CardMetrics = () => {
         {
             id: 4,
             title: "System Feedback",
-            value: "4.8/5",
-            description: "35 recipient feedback",
+            value: isLoading
+                ? "—"
+                : `${stats.averageSystemRating ?? 0}/5`,
+            description: `${stats.systemFeedbackCount ?? 0} recipient feedback`,
             icon: MonitorCheck,
             bgColor: "bg-purple-100",
             iconColor: "text-purple-600",
@@ -53,28 +74,32 @@ const CardMetrics = () => {
 
     return (
         <div className="grid grid-cols-4 auto-rows-min gap-4">
-            {cardMetrics.map((data) => {
-                const Icon = data.icon;
+            {cardMetrics.map((item) => {
+                const Icon = item.icon;
 
                 return (
-                    <Card key={data.id} className="flex-row gap-0 p-4">
-                        <div className={`flex h-15 w-15 items-center justify-center rounded-xl ${data.bgColor}`}>
-                            {Icon && <Icon className={`h-8 w-8 ${data.iconColor}`} />}
+                    <Card key={item.id} className="flex-row gap-0 p-4">
+                        <div
+                            className={`flex h-15 w-15 items-center justify-center rounded-xl ${item.bgColor}`}
+                        >
+                            {Icon && (
+                                <Icon className={`h-8 w-8 ${item.iconColor}`} />
+                            )}
                         </div>
 
                         <div className="flex-1">
                             <CardHeader className="pb-0">
                                 <CardTitle className="text-sm">
-                                    {data.title}
+                                    {item.title}
                                 </CardTitle>
                             </CardHeader>
 
                             <CardContent>
                                 <h1 className="text-3xl font-bold tracking-tight">
-                                    {data.value}
+                                    {item.value}
                                 </h1>
                                 <p className="text-xs text-muted-foreground">
-                                    {data.description}
+                                    {item.description}
                                 </p>
                             </CardContent>
                         </div>

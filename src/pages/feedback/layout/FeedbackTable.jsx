@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
     InputGroup,
     InputGroupAddon,
@@ -32,102 +33,123 @@ import {
 import {
     Search,
     CircleSlash,
-    View,
     Loader,
     Star,
+    ThumbsUp,
+    ThumbsDown,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { formatDate } from "@/lib/formatDate";
+import { getFeedback } from "@/services/feedbackService";
 
-const feedbackData = [
-    {
-        id: "FDB-001",
-        type: "Operator",
-        submittedBy: "Juan Dela Cruz",
-        subject: "Operator Service",
-        rating: 5,
-        comment: "The operator responded quickly and was very helpful.",
-        submittedAt: "Sept. 12, 2026",
-        status: "Published",
-    },
-    {
-        id: "FDB-002",
-        type: "System",
-        submittedBy: "Maria Santos",
-        subject: "System Experience",
-        rating: 4,
-        comment: "The system is easy to use, but some pages load slowly.",
-        submittedAt: "Sept. 11, 2026",
-        status: "Published",
-    },
-    {
-        id: "FDB-003",
-        type: "Alert",
-        submittedBy: "Pedro Reyes",
-        subject: "Emergency Alert",
-        rating: null,
-        comment: "The alert provided useful information during the incident.",
-        submittedAt: "Sept. 10, 2026",
-        status: "Published",
-    },
-    {
-        id: "FDB-004",
-        type: "Operator",
-        submittedBy: "Ana Garcia",
-        subject: "Operator Service",
-        rating: 3,
-        comment: "The response was okay but could have been faster.",
-        submittedAt: "Sept. 9, 2026",
-        status: "Pending",
-    },
-    {
-        id: "FDB-005",
-        type: "System",
-        submittedBy: "Carlos Mendoza",
-        subject: "System Experience",
-        rating: 5,
-        comment: "Very convenient and easy to navigate.",
-        submittedAt: "Sept. 8, 2026",
-        status: "Published",
-    },
-    {
-        id: "FDB-006",
-        type: "Alert",
-        submittedBy: "Elena Cruz",
-        subject: "Emergency Alert",
-        rating: null,
-        comment: "The alert was clear and reached me immediately.",
-        submittedAt: "Sept. 7, 2026",
-        status: "Published",
-    },
-]
+const PAGE_SIZE = 10;
+
+const typeLabel = (type) => {
+    if (!type) return "—";
+    return type.charAt(0).toUpperCase() + type.slice(1);
+};
+
+const subjectFor = (item) => {
+    if (item.type === "alert") {
+        return item.alert?.title || "Emergency Alert";
+    }
+    if (item.type === "operator") {
+        return item.operator?.name
+            ? `Operator: ${item.operator.name}`
+            : "Operator Service";
+    }
+    return "System Experience";
+};
 
 const FeedbackTable = () => {
     const [searchInput, setSearchInput] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
-    const [statusFilter, setStatusFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
 
-    const filteredFeedback = feedbackData.filter((feedback) => {
-        const search = searchInput.toLowerCase();
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setSearchTerm(searchInput);
+            setCurrentPage(1);
+        }, 400);
+        return () => clearTimeout(timeout);
+    }, [searchInput]);
 
-        const matchesSearch =
-            feedback.id.toLowerCase().includes(search) ||
-            feedback.submittedBy.toLowerCase().includes(search) ||
-            feedback.subject.toLowerCase().includes(search) ||
-            feedback.comment.toLowerCase().includes(search);
-
-        const matchesType =
-            typeFilter === "all" || feedback.type.toLowerCase() === typeFilter.toLowerCase();
-
-        const matchesStatus =
-            statusFilter === "all" || feedback.status.toLowerCase() === statusFilter.toLowerCase();
-
-        return matchesSearch && matchesType && matchesStatus;
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ["feedback-list", typeFilter, searchTerm],
+        queryFn: () =>
+            getFeedback({
+                type: typeFilter === "all" ? "all" : typeFilter,
+                search: searchTerm || undefined,
+            }),
+        placeholderData: (previous) => previous,
+        staleTime: 15_000,
     });
 
+    const items = data?.data ?? [];
+    const total = data?.meta?.total ?? items.length;
+
+    const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    const pageItems = useMemo(() => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        return items.slice(start, start + PAGE_SIZE);
+    }, [items, currentPage]);
+
+    useEffect(() => {
+        if (currentPage > lastPage) {
+            setCurrentPage(1);
+        }
+    }, [lastPage, currentPage]);
+
     const handlePageChange = (page) => {
-        if (page < 1) return;
+        if (page < 1 || page > lastPage) return;
         setCurrentPage(page);
+    };
+
+    const pageNumbers = useMemo(() => {
+        const pages = [];
+        const maxVisible = 5;
+        let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let end = Math.min(lastPage, start + maxVisible - 1);
+        start = Math.max(1, end - maxVisible + 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        return pages;
+    }, [currentPage, lastPage]);
+
+    const renderRating = (item) => {
+        if (item.type === "alert") {
+            if (item.rating === "like") {
+                return (
+                    <div className="flex items-center gap-1 text-emerald-700">
+                        <ThumbsUp className="size-4" />
+                        <span>Helpful</span>
+                    </div>
+                );
+            }
+            if (item.rating === "dislike") {
+                return (
+                    <div className="flex items-center gap-1 text-rose-500">
+                        <ThumbsDown className="size-4" />
+                        <span>Not Helpful</span>
+                    </div>
+                );
+            }
+            return (
+                <span className="text-muted-foreground">—</span>
+            );
+        }
+
+        if (item.rating != null) {
+            return (
+                <div className="flex items-center gap-1">
+                    <Star className="size-4 fill-current text-amber-500" />
+                    <span>{item.rating}/5</span>
+                </div>
+            );
+        }
+
+        return <span className="text-muted-foreground">—</span>;
     };
 
     return (
@@ -145,7 +167,6 @@ const FeedbackTable = () => {
                                 value={searchInput}
                                 onChange={(e) => {
                                     setSearchInput(e.target.value);
-                                    setCurrentPage(1);
                                 }}
                             />
                             <InputGroupAddon>
@@ -170,23 +191,6 @@ const FeedbackTable = () => {
                                 <SelectItem value="system">System</SelectItem>
                             </SelectContent>
                         </Select>
-
-                        <Select
-                            value={statusFilter}
-                            onValueChange={(value) => {
-                                setStatusFilter(value);
-                                setCurrentPage(1);
-                            }}
-                        >
-                            <SelectTrigger className="w-40">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                            </SelectContent>
-                        </Select>
                     </div>
                 </div>
 
@@ -201,75 +205,54 @@ const FeedbackTable = () => {
                                 <TableHead>Rating</TableHead>
                                 <TableHead>Comment</TableHead>
                                 <TableHead>Submitted At</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">
-                                    Actions
-                                </TableHead>
                             </TableRow>
                         </TableHeader>
-
                         <TableBody>
-                            {false ? (
+                            {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={9}>
-                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                                            <Loader className="animate-spin" />
-                                            <p>Loading feedback . . .</p>
+                                    <TableCell colSpan={6}>
+                                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+                                            <Loader className="size-5 animate-spin" />
+                                            <p>Loading feedback...</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ) : filteredFeedback.length > 0 ? (
-                                filteredFeedback.map((feedback) => (
-                                    <TableRow key={feedback.id}>
-
-                                        <TableCell>
-                                            {feedback.type}
+                            ) : isError ? (
+                                <TableRow>
+                                    <TableCell colSpan={6}>
+                                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+                                            <CircleSlash />
+                                            <p>Failed to load feedback</p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : pageItems.length > 0 ? (
+                                pageItems.map((feedback) => (
+                                    <TableRow key={`${feedback.type}-${feedback.id}`}>
+                                        <TableCell className="font-medium">
+                                            {typeLabel(feedback.type)}
                                         </TableCell>
-
                                         <TableCell>
-                                            {feedback.submittedBy}
+                                            {feedback.recipient?.name || "—"}
                                         </TableCell>
-
                                         <TableCell>
-                                            {feedback.subject}
+                                            {subjectFor(feedback)}
                                         </TableCell>
-
                                         <TableCell>
-                                            {feedback.rating ? (
-                                                <div className="flex items-center gap-1">
-                                                    <Star className="size-4 fill-current" />
-                                                    <span>
-                                                        {feedback.rating}.0
-                                                    </span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-muted-foreground">
-                                                    Helpful / Not Helpful
-                                                </span>
-                                            )}
+                                            {renderRating(feedback)}
                                         </TableCell>
-
                                         <TableCell className="max-w-[280px] truncate">
-                                            {feedback.comment}
+                                            {feedback.comment || "—"}
                                         </TableCell>
-
                                         <TableCell>
-                                            {feedback.submittedAt}
-                                        </TableCell>
-
-                                        <TableCell>
-                                            {feedback.status}
-                                        </TableCell>
-
-                                        <TableCell className="text-right">
-                                            <View className="ml-auto size-4 cursor-pointer" />
+                                            {formatDate(feedback.submittedAt)}
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={9}>
-                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                    <TableCell colSpan={6}>
+                                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
                                             <CircleSlash />
                                             <p>No feedback found</p>
                                         </div>
@@ -284,7 +267,9 @@ const FeedbackTable = () => {
                     {/* Pagination */}
                     <div className="flex items-center justify-end px-2 py-2">
                         <div className="text-muted-foreground flex-1 text-sm">
-                            Page {currentPage} of 1
+                            {total === 0
+                                ? "No results"
+                                : `Page ${currentPage} of ${lastPage} · ${total} total`}
                         </div>
 
                         <div>
@@ -303,17 +288,19 @@ const FeedbackTable = () => {
                                         />
                                     </PaginationItem>
 
-                                    <PaginationItem>
-                                        <PaginationLink
-                                            isActive={currentPage === 1}
-                                            onClick={() =>
-                                                handlePageChange(1)
-                                            }
-                                            className="cursor-pointer"
-                                        >
-                                            1
-                                        </PaginationLink>
-                                    </PaginationItem>
+                                    {pageNumbers.map((page) => (
+                                        <PaginationItem key={page}>
+                                            <PaginationLink
+                                                isActive={currentPage === page}
+                                                onClick={() =>
+                                                    handlePageChange(page)
+                                                }
+                                                className="cursor-pointer"
+                                            >
+                                                {page}
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    ))}
 
                                     <PaginationItem>
                                         <PaginationNext
@@ -321,7 +308,7 @@ const FeedbackTable = () => {
                                                 handlePageChange(currentPage + 1)
                                             }
                                             className={
-                                                currentPage === 1
+                                                currentPage === lastPage
                                                     ? "pointer-events-none opacity-50"
                                                     : "cursor-pointer"
                                             }

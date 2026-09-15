@@ -1,5 +1,6 @@
 "use client"
 
+import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 import {
@@ -23,24 +24,8 @@ import {
 import {
     Headset,
     MonitorCog,
-} from 'lucide-react';
-
-const chartData = {
-    operator: [
-        { rating: "5 ⭐", reviews: 383 },
-        { rating: "4 ⭐", reviews: 100 },
-        { rating: "3 ⭐", reviews: 150 },
-        { rating: "2 ⭐", reviews: 50 },
-        { rating: "1 ⭐", reviews: 120 },
-    ],
-    system: [
-        { rating: "5 ⭐", reviews: 350 },
-        { rating: "4 ⭐", reviews: 120 },
-        { rating: "3 ⭐", reviews: 90 },
-        { rating: "2 ⭐", reviews: 45 },
-        { rating: "1 ⭐", reviews: 30 },
-    ],
-}
+} from "lucide-react";
+import { getFeedbackStats } from "@/services/feedbackService";
 
 const chartConfig = {
     reviews: {
@@ -49,11 +34,18 @@ const chartConfig = {
     },
 }
 
+const toChartData = (distribution = []) =>
+    distribution.map((item) => ({
+        rating: `${item.rating} ⭐`,
+        reviews: item.reviews ?? 0,
+    }));
+
 const getAverageRating = (data) => {
     const totalReviews = data.reduce((sum, item) => sum + item.reviews, 0)
+    if (totalReviews === 0) return "0.0"
 
     const totalRating = data.reduce((sum, item) => {
-        const rating = Number(item.rating.charAt(0))
+        const rating = Number(String(item.rating).charAt(0))
         return sum + rating * item.reviews
     }, 0)
 
@@ -61,158 +53,121 @@ const getAverageRating = (data) => {
 }
 
 const RatingBreakdown = () => {
-    return (
-        <Card>
-            <Tabs defaultValue="operator">
-                <CardHeader>
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <CardTitle>Feedback Rating</CardTitle>
-                            <CardDescription>
-                                Distribution of feedback ratings
-                            </CardDescription>
-                        </div>
-                        <TabsList>
-                            <TabsTrigger value="operator">
-                                <Headset />
-                                Operator
-                            </TabsTrigger>
-                            <TabsTrigger value="system">
-                                <MonitorCog />
-                                System
-                            </TabsTrigger>
-                        </TabsList>
+    const { data, isLoading } = useQuery({
+        queryKey: ["feedback-stats"],
+        queryFn: getFeedbackStats,
+        staleTime: 30_000,
+    });
+
+    const stats = data?.data ?? {};
+    const operatorData = toChartData(stats.operatorRatingDistribution);
+    const systemData = toChartData(stats.systemRatingDistribution);
+
+    const operatorAvg =
+        stats.averageOperatorRating != null
+            ? Number(stats.averageOperatorRating).toFixed(1)
+            : getAverageRating(operatorData);
+    const systemAvg =
+        stats.averageSystemRating != null
+            ? Number(stats.averageSystemRating).toFixed(1)
+            : getAverageRating(systemData);
+
+    const renderChart = (chartData, average) => (
+        <CardContent className="space-y-4">
+            <div className="flex items-end gap-2">
+                <div>
+                    <div className="flex items-baseline gap-1">
+                        <h1 className="text-4xl font-bold tracking-tight">
+                            {isLoading ? "—" : average}
+                        </h1>
+                        <span className="text-sm text-muted-foreground">
+                            / 5.0
+                        </span>
                     </div>
-                </CardHeader>
+                    <p className="text-xs text-muted-foreground">
+                        Average Rating
+                    </p>
+                </div>
+            </div>
+
+            <ChartContainer
+                config={chartConfig}
+                className="h-[150px] w-full"
+            >
+                <BarChart
+                    accessibilityLayer
+                    data={chartData}
+                    layout="vertical"
+                    margin={{
+                        left: 0,
+                        right: 20,
+                    }}
+                >
+                    <YAxis
+                        dataKey="rating"
+                        type="category"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                    />
+
+                    <XAxis
+                        dataKey="reviews"
+                        type="number"
+                        hide
+                    />
+
+                    <ChartTooltip
+                        cursor={false}
+                        content={
+                            <ChartTooltipContent
+                                hideLabel
+                                formatter={(value) =>
+                                    `${value} reviews`
+                                }
+                            />
+                        }
+                    />
+
+                    <Bar
+                        dataKey="reviews"
+                        fill="var(--color-reviews)"
+                        radius={5}
+                    />
+                </BarChart>
+            </ChartContainer>
+        </CardContent>
+    );
+
+    return (
+        <Card className="h-full">
+            <CardHeader>
+                <CardTitle>Rating Breakdown</CardTitle>
+                <CardDescription>
+                    Distribution of ratings from recipients
+                </CardDescription>
+            </CardHeader>
+
+            <Tabs defaultValue="operator" className="w-full">
+                <div className="px-6">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="operator" className="gap-2">
+                            <Headset className="h-4 w-4" />
+                            Operator
+                        </TabsTrigger>
+                        <TabsTrigger value="system" className="gap-2">
+                            <MonitorCog className="h-4 w-4" />
+                            System
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <TabsContent value="operator">
-                    <CardContent>
-                        <div className="p-6">
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl font-semibold">
-                                    {getAverageRating(chartData.operator)}
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                    / 5.0
-                                </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Average Rating
-                            </p>
-                        </div>
-
-                        <ChartContainer
-                            config={chartConfig}
-                            className="h-[150px] w-full"
-                        >
-                            <BarChart
-                                accessibilityLayer
-                                data={chartData.operator}
-                                layout="vertical"
-                                margin={{
-                                    left: 0,
-                                    right: 20,
-                                }}
-                            >
-                                <YAxis
-                                    dataKey="rating"
-                                    type="category"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                />
-
-                                <XAxis
-                                    dataKey="reviews"
-                                    type="number"
-                                    hide
-                                />
-
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={
-                                        <ChartTooltipContent
-                                            hideLabel
-                                            formatter={(value) =>
-                                                `${value} reviews`
-                                            }
-                                        />
-                                    }
-                                />
-
-                                <Bar
-                                    dataKey="reviews"
-                                    fill="var(--color-reviews)"
-                                    radius={5}
-                                />
-                            </BarChart>
-                        </ChartContainer>
-                    </CardContent>
+                    {renderChart(operatorData, operatorAvg)}
                 </TabsContent>
 
                 <TabsContent value="system">
-                    <CardContent>
-                        <div className="p-6">
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl font-semibold">
-                                    {getAverageRating(chartData.system)}
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                    / 5.0
-                                </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Average Rating
-                            </p>
-                        </div>
-
-                        <ChartContainer
-                            config={chartConfig}
-                            className="h-[150px] w-full"
-                        >
-                            <BarChart
-                                accessibilityLayer
-                                data={chartData.system}
-                                layout="vertical"
-                                margin={{
-                                    left: 0,
-                                    right: 20,
-                                }}
-                            >
-                                <YAxis
-                                    dataKey="rating"
-                                    type="category"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                />
-
-                                <XAxis
-                                    dataKey="reviews"
-                                    type="number"
-                                    hide
-                                />
-
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={
-                                        <ChartTooltipContent
-                                            hideLabel
-                                            formatter={(value) =>
-                                                `${value} reviews`
-                                            }
-                                        />
-                                    }
-                                />
-
-                                <Bar
-                                    dataKey="reviews"
-                                    fill="var(--color-reviews)"
-                                    radius={5}
-                                />
-                            </BarChart>
-                        </ChartContainer>
-                    </CardContent>
+                    {renderChart(systemData, systemAvg)}
                 </TabsContent>
             </Tabs>
         </Card>
