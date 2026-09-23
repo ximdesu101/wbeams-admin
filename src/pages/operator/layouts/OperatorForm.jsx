@@ -195,11 +195,12 @@ const OperatorForm = ({ open, onOpenChange, onSuccess }) => {
                   <InputGroup>
                     <InputGroupInput
                       id={field.name}
-                      type="tel"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="09123456789"
                       value={field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      onChange={(e) => field.handleChange(e.target.value.replace(/\D/g, ""))}
                       disabled={createOperatorMutation.isPending}
                       aria-invalid={!field.state.meta.isValid}
                     />
