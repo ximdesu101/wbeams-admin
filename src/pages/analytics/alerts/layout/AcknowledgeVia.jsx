@@ -1,5 +1,4 @@
-"use client"
-
+import { useEffect, useState } from "react"
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis } from "recharts"
 
 import {
@@ -16,14 +15,7 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart"
-
-export const description = "Acknowledged alerts by channel"
-
-const chartData = [
-    { channel: "In-App", acknowledged: 428, fill: "var(--chart-1)" },
-    { channel: "Email", acknowledged: 315, fill: "var(--chart-2)" },
-    { channel: "SMS", acknowledged: 267, fill: "var(--chart-3)" },
-]
+import { getAcknowledgeVia } from "@/services/analyticsService"
 
 const chartConfig = {
     acknowledged: {
@@ -33,6 +25,16 @@ const chartConfig = {
 }
 
 const AcknowledgeVia = () => {
+    const [chartData, setChartData] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        getAcknowledgeVia()
+            .then((res) => setChartData(res.data))
+            .catch(() => setChartData([]))
+            .finally(() => setLoading(false))
+    }, [])
+
     return (
         <Card>
             <CardHeader>
@@ -43,43 +45,44 @@ const AcknowledgeVia = () => {
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                    <BarChart
-                        accessibilityLayer
-                        data={chartData}
-                        margin={{
-                            top: 20,
-                        }}
-                    >
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                            dataKey="channel"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                        />
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent hideLabel />}
-                        />
-                        <Bar
-                            dataKey="acknowledged"
-                            radius={8}
+                    {loading ? (
+                        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                            Loading…
+                        </div>
+                    ) : (
+                        <BarChart
+                            accessibilityLayer
+                            data={chartData}
+                            margin={{ top: 20 }}
                         >
-                            {chartData.map((entry) => (
-                                <Cell
-                                    key={`cell-${entry.channel}`}
-                                    fill={entry.fill}
-                                />
-                            ))}
-                            <LabelList
-                                position="top"
-                                offset={12}
-                                className="fill-foreground"
-                                fontSize={12}
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="channel"
+                                tickLine={false}
+                                tickMargin={10}
+                                axisLine={false}
                             />
-                        </Bar>
-                        <ChartLegend content={<ChartLegendContent />} />
-                    </BarChart>
+                            <ChartTooltip
+                                cursor={false}
+                                content={<ChartTooltipContent hideLabel />}
+                            />
+                            <Bar dataKey="acknowledged" radius={8}>
+                                {chartData.map((entry) => (
+                                    <Cell
+                                        key={`cell-${entry.channel}`}
+                                        fill={entry.fill}
+                                    />
+                                ))}
+                                <LabelList
+                                    position="top"
+                                    offset={12}
+                                    className="fill-foreground"
+                                    fontSize={12}
+                                />
+                            </Bar>
+                            <ChartLegend content={<ChartLegendContent />} />
+                        </BarChart>
+                    )}
                 </ChartContainer>
             </CardContent>
         </Card>

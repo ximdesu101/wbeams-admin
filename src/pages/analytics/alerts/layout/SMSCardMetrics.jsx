@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import {
     MessageSquare,
     CheckCircle2,
@@ -11,54 +12,47 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
+import { getSmsMetrics } from "@/services/analyticsService"
 
-const smsMetrics = [
-    {
-        title: "SMS Sent",
-        value: "7,790",
-        icon: MessageSquare,
-    },
-    {
-        title: "SMS Delivered",
-        value: "7,304",
-        icon: CheckCircle2,
-    },
-    {
-        title: "SMS Jobs",
-        value: "7,825",
-        icon: BriefcaseBusiness,
-    },
-    {
-        title: "SMS Failed",
-        value: "486",
-        icon: XCircle,
-    },
-    {
-        title: "Delivery Rate",
-        value: "93.8%",
-        icon: TrendingUp,
-    },
-    {
-        title: "Failure Rate",
-        value: "6.2%",
-        icon: TrendingDown,
-    },
+const metricConfig = [
+    { key: "sent",          title: "SMS Sent",      icon: MessageSquare      },
+    { key: "delivered",     title: "SMS Delivered", icon: CheckCircle2       },
+    { key: "jobs",          title: "SMS Jobs",      icon: BriefcaseBusiness  },
+    { key: "failed",        title: "SMS Failed",    icon: XCircle            },
+    { key: "delivery_rate", title: "Delivery Rate", icon: TrendingUp,  pct: true },
+    { key: "failure_rate",  title: "Failure Rate",  icon: TrendingDown, pct: true },
 ]
 
 const SMSCardMetrics = () => {
+    const [metrics, setMetrics] = useState(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        getSmsMetrics()
+            .then((res) => setMetrics(res.data))
+            .catch(() => setMetrics(null))
+            .finally(() => setLoading(false))
+    }, [])
+
+    const formatValue = (config) => {
+        if (loading || metrics === null) return "—"
+        const raw = metrics[config.key] ?? 0
+        if (config.pct) return `${raw}%`
+        return Number(raw).toLocaleString()
+    }
+
     return (
         <div className="grid grid-cols-2 gap-4">
-            {smsMetrics.map((metric) => {
-                const Icon = metric.icon
-
+            {metricConfig.map((config) => {
+                const Icon = config.icon
                 return (
-                    <Card key={metric.title}>
+                    <Card key={config.title}>
                         <CardHeader>
                             <Icon className="mb-2 h-5 w-5 text-muted-foreground" />
-                            <CardDescription>{metric.title}</CardDescription>
+                            <CardDescription>{config.title}</CardDescription>
                             <CardTitle className="text-2xl">
-                                {metric.value}
+                                {formatValue(config)}
                             </CardTitle>
                         </CardHeader>
                     </Card>

@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -211,7 +210,7 @@ const FeedbackTable = () => {
                             {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={6}>
-                                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <Loader className="size-5 animate-spin" />
                                             <p>Loading feedback...</p>
                                         </div>
@@ -220,7 +219,7 @@ const FeedbackTable = () => {
                             ) : isError ? (
                                 <TableRow>
                                     <TableCell colSpan={6}>
-                                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <CircleSlash />
                                             <p>Failed to load feedback</p>
                                         </div>
@@ -252,7 +251,7 @@ const FeedbackTable = () => {
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={6}>
-                                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <CircleSlash />
                                             <p>No feedback found</p>
                                         </div>

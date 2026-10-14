@@ -89,7 +89,7 @@ const OperatorForm = ({ open, onOpenChange, onSuccess }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-sm"
+        className="sm:max-w-lg"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <form
